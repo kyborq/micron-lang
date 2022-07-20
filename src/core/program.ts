@@ -13,6 +13,7 @@ import Parser from "./parser";
 import Token from "./token";
 import { tokenTypeList } from "./token-type";
 import { error } from "../utils";
+import Executer from "./executer";
 
 interface IScope {
   [key: string]: number | "NaN";
@@ -43,7 +44,9 @@ class Program {
       const node = parser.parse();
 
       if (node) {
-        this.run(node);
+        // this.run(node);
+        const executer = new Executer(node);
+        executer.run();
       }
     }
   }
