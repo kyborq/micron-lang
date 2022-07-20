@@ -1,25 +1,28 @@
 import Token from "./token";
 import { tokenTypeList } from "./token-type";
+import { error, spaces } from "../utils";
 
 class Lexer {
   command: string;
   tokens: Token[];
   pos: number;
+  error: boolean;
 
   constructor(command: string) {
     this.command = command;
     this.tokens = [];
     this.pos = 0;
+    this.error = false;
   }
 
-  tokenize(): Token[] {
+  tokenize(): Token[] | null {
     while (this.nextToken()) {}
 
     this.tokens = this.tokens.filter(
       (t) => t.type.name !== tokenTypeList.SPACE.name
     );
 
-    return this.tokens;
+    return !this.error ? this.tokens : null;
   }
 
   nextToken(): boolean {
@@ -42,7 +45,9 @@ class Lexer {
       }
     }
 
-    throw new Error(`Обнаружена ошибка в команде: ${this.command}`);
+    error(this.pos, "Ошибка синтаксиса");
+    this.error = true;
+    return false;
   }
 }
 

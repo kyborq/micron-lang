@@ -1,12 +1,11 @@
 import { createInterface } from "readline";
 import { stdin, stdout } from "process";
 
-import Program from "./program";
+import Program from "./core/program";
 
 const readline = createInterface({
   input: stdin,
   output: stdout,
-  prompt: ">>> ",
   terminal: false,
 });
 

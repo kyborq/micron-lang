@@ -1,17 +1,21 @@
-import BinarOperation from "./nodes/binar-operation";
-import Expression from "./nodes/expression";
-import Function from "./nodes/function";
-import Identifier from "./nodes/identifier";
-import Number from "./nodes/number";
-import UnarOperation from "./nodes/unar-operation";
-import Variable from "./nodes/variable";
-import ZeroOperation from "./nodes/zero-operation";
+import {
+  BinarOperation,
+  Expression,
+  Identifier,
+  Number,
+  UnarOperation,
+  Variable,
+  ZeroOperation,
+  Function,
+} from "./nodes";
 import Token from "./token";
 import TokenType, { tokenTypeList } from "./token-type";
+import { error } from "../utils";
 
 class Parser {
   tokens: Token[];
   pos: number = 0;
+  error: boolean = false;
 
   constructor(tokens: Token[]) {
     this.tokens = tokens;
@@ -30,8 +34,7 @@ class Parser {
     return null;
   }
 
-  parseVariableOrNumber(): Expression {
-    // console.log(this.tokens);
+  parseVariableOrNumber(): Expression | null {
     const number = this.match(tokenTypeList.NUMBER);
     if (number) {
       return new Number(number);
@@ -47,11 +50,12 @@ class Parser {
       return new Identifier(identifier);
     }
 
-    throw new Error("Ожидалась переменная или число " + this.pos);
+    error(this.pos, "Ожидалась переменная или число");
+    return null;
   }
 
   parseFormula(): Expression {
-    let leftNode = this.parseVariableOrNumber();
+    let leftNode = this.parseVariableOrNumber() as Expression;
     let operator = this.match(
       tokenTypeList.ADD,
       tokenTypeList.SUB,
@@ -59,7 +63,7 @@ class Parser {
       tokenTypeList.DIV
     );
     while (operator !== null) {
-      const rightNode = this.parseVariableOrNumber();
+      const rightNode = this.parseVariableOrNumber() as Expression;
       leftNode = new BinarOperation(operator, leftNode, rightNode);
       operator = this.match(
         tokenTypeList.ADD,
@@ -71,16 +75,17 @@ class Parser {
     return leftNode;
   }
 
-  parseIdentifier(): Expression {
+  parseIdentifier(): Expression | null {
     const identifier = this.match(tokenTypeList.IDENTIFIER);
     if (identifier) {
       return new Identifier(identifier);
     }
 
-    throw new Error("Ожидалась переменная");
+    error(this.pos, "Ожидался идентификатор");
+    return null;
   }
 
-  parsePrint() {
+  parsePrint(): Expression | null {
     const operator = this.match(
       tokenTypeList.PRINT,
       tokenTypeList.PRINTVARS,
@@ -89,7 +94,7 @@ class Parser {
 
     if (operator !== null) {
       if (operator.type.name === tokenTypeList.PRINT.name) {
-        const id = this.parseIdentifier();
+        const id = this.parseIdentifier() as Expression;
         return new UnarOperation(operator, id);
       }
 
@@ -102,16 +107,15 @@ class Parser {
       }
     }
 
-    throw new Error(
-      `Ожидается унарный оператор ${operator?.text} на ${this.pos} позиции`
-    );
+    error(this.pos, `Ожидался оператор`);
+    return null;
   }
 
-  parseFunction(): Expression {
+  parseFunction(): Expression | null {
     const operator = this.match(tokenTypeList.FUNCTION);
 
     if (operator) {
-      const id = this.parseIdentifier();
+      const id = this.parseIdentifier() as Expression;
 
       const node = new Function(operator, id);
       const assignOperator = this.match(tokenTypeList.ASSIGN);
@@ -126,18 +130,17 @@ class Parser {
       }
     }
 
-    throw new Error("asdfasdf");
+    error(this.pos, "Ожидалась функция");
+    return null;
   }
 
-  parseExpression(): Expression {
+  parseExpression(): Expression | null {
     if (this.match(tokenTypeList.FUNCTION) !== null) {
       this.pos -= 1;
 
       const fn = this.parseFunction();
       return fn;
     }
-
-    // this.pos -= 1;
 
     if (this.match(tokenTypeList.VAR, tokenTypeList.LET) === null) {
       const printNode = this.parsePrint();
@@ -151,7 +154,7 @@ class Parser {
 
     if (assignOperator !== null) {
       if (variableNode.variable.type.name === tokenTypeList.LET.name) {
-        const rightFormulaNode = this.parseVariableOrNumber();
+        const rightFormulaNode = this.parseVariableOrNumber() as Expression;
         const binaryNode = new BinarOperation(
           assignOperator,
           variableNode,
@@ -166,19 +169,19 @@ class Parser {
       return unarNode;
     }
 
-    throw new Error("Ошибка присвоения переменной");
+    error(this.pos, "Ошибка присвоения переменной");
+    return null;
   }
 
-  parse(): Expression {
-    // const nodes: Expression[] = [];
-    let node = new Expression();
-
+  parse(): Expression | null {
     while (this.pos < this.tokens.length) {
-      // nodes.push(this.parseExpression());
-      node = this.parseExpression();
+      const node = this.parseExpression();
+      if (node) {
+        return node;
+      }
     }
 
-    return node;
+    return null;
   }
 }
 

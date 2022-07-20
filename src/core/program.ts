@@ -1,15 +1,18 @@
 import Lexer from "./lexer";
-import BinarOperation from "./nodes/binar-operation";
-import Expression from "./nodes/expression";
-import Function from "./nodes/function";
-import Identifier from "./nodes/identifier";
-import Number from "./nodes/number";
-import UnarOperation from "./nodes/unar-operation";
-import Variable from "./nodes/variable";
-import ZeroOperation from "./nodes/zero-operation";
+import {
+  BinarOperation,
+  Expression,
+  Identifier,
+  Number,
+  UnarOperation,
+  Variable,
+  ZeroOperation,
+  Function,
+} from "./nodes";
 import Parser from "./parser";
 import Token from "./token";
 import { tokenTypeList } from "./token-type";
+import { error } from "../utils";
 
 interface IScope {
   [key: string]: number | "NaN";
@@ -31,22 +34,18 @@ class Program {
     this.history = [];
   }
 
-  add(command: string) {
-    const lexer = new Lexer(command);
-    const tokens = lexer.tokenize();
-
-    this.tokens.push(...tokens);
-    this.history.push(command);
-  }
-
   execute(command: string) {
     const lexer = new Lexer(command);
     const tokens = lexer.tokenize();
 
-    const parser = new Parser(tokens);
-    const node = parser.parse();
+    if (tokens) {
+      const parser = new Parser(tokens);
+      const node = parser.parse();
 
-    this.run(node);
+      if (node) {
+        this.run(node);
+      }
+    }
   }
 
   getVarFromNode(node: Expression): number | "NaN" {
@@ -135,14 +134,6 @@ class Program {
       }
     }
 
-    if (node instanceof Variable) {
-      if (this.variables[node.identifier.text]) {
-        return this.variables[node.identifier.text];
-      } else {
-        throw new Error(`Переменная ${node.identifier.text} не обнаружена`);
-      }
-    }
-
     if (node instanceof Identifier) {
       const name = node.identifier.text;
 
@@ -155,7 +146,8 @@ class Program {
         return result;
       }
 
-      throw new Error(`Идентификатор ${node.identifier.text} не обнаружен`);
+      error(0, `Переменная ${node.identifier.text} не обнаружена`);
+      return;
     }
 
     if (node instanceof BinarOperation) {
@@ -212,7 +204,8 @@ class Program {
             if (!Object.keys(this.variables).includes(id.identifier.text)) {
               this.functions[id.identifier.text] = node;
             } else {
-              throw Error("Этот идентификатор занят");
+              error(0, "Идентификатор уже существует");
+              return;
             }
             return result;
           }
