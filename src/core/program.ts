@@ -14,13 +14,19 @@ import Token from "./token";
 import { tokenTypeList } from "./token-type";
 import { error } from "../utils";
 import Executer from "./executer";
+import { performance } from "perf_hooks";
+
+type FunctionType = {
+  function: BinarOperation;
+  calculated?: number;
+};
 
 interface IScope {
   [key: string]: number | "NaN";
 }
 
 interface IFunctionsScope {
-  [key: string]: BinarOperation;
+  [key: string]: FunctionType;
 }
 
 class Program {
@@ -44,9 +50,13 @@ class Program {
       const node = parser.parse();
 
       if (node) {
+        // --- PERFOMANCE MEASURE
+        // const startTime = performance.now();
+        // this.run(node);
+        // const endTime = performance.now();
+        // console.log(`${endTime - startTime}ms`);
+
         this.run(node);
-        // const executer = new Executer(node);
-        // executer.run();
       }
     }
   }
@@ -84,10 +94,14 @@ class Program {
 
     const fns = Object.keys(sortedFunctions);
     fns.forEach((f) => {
-      const n = this.functions[f] as BinarOperation;
-      const result = this.run(n.rightNode);
-      const value = parseFloat(`${result}`).toFixed(2);
-      console.log(`${f}:${value}`);
+      const cachedFn = this.functions[f];
+      if (!cachedFn["calculated"]) {
+        const result = this.run(cachedFn.function);
+        const value = parseFloat(`${result}`).toFixed(2);
+        console.log(`${f}:${value}`);
+      } else {
+        console.log(`${f}:${cachedFn.calculated}`);
+      }
     });
   }
 
@@ -113,10 +127,15 @@ class Program {
           }
 
           if (Object.keys(this.functions).includes(name)) {
-            const n = this.functions[name] as BinarOperation;
-            const result = this.run(n.rightNode);
-            const value = parseFloat(`${result}`).toFixed(2);
-            console.log(value);
+            const cachedFn = this.functions[name];
+
+            if (!cachedFn["calculated"]) {
+              const result = this.run(cachedFn.function);
+              const value = parseFloat(`${result}`).toFixed(2);
+              console.log(value);
+            } else {
+              console.log(cachedFn.calculated);
+            }
           }
 
           return;
@@ -144,9 +163,14 @@ class Program {
         const n = this.variables[name] as number;
         return n;
       } else if (Object.keys(this.functions).includes(name)) {
-        const n = this.functions[name] as BinarOperation;
-        const result = this.run(n.rightNode);
-        return result;
+        const cachedFn = this.functions[name];
+
+        if (!cachedFn.calculated) {
+          const result = this.run(cachedFn.function);
+          return result;
+        } else {
+          return cachedFn.calculated;
+        }
       }
 
       error(0, `Переменная ${node.identifier.text} не обнаружена`);
@@ -200,12 +224,26 @@ class Program {
           const currentNode = node.leftNode;
           if (currentNode instanceof Variable) {
             this.variables[currentNode.identifier.text] = result;
+
+            Object.keys(this.functions).forEach((key) => {
+              const fn = this.functions[key];
+              const result = this.run(fn.function);
+              this.functions[key] = {
+                ...fn,
+                calculated: result,
+              };
+            });
+
             return result;
           }
           if (currentNode instanceof Function) {
             const id = currentNode.identifier as Identifier;
-            if (!Object.keys(this.variables).includes(id.identifier.text)) {
-              this.functions[id.identifier.text] = node;
+            const name = id.identifier.text;
+            if (!Object.keys(this.variables).includes(name)) {
+              this.functions[name] = {
+                calculated: result,
+                function: node.rightNode as BinarOperation,
+              };
             } else {
               error(0, "Идентификатор уже существует");
               return;
