@@ -44,9 +44,9 @@ class Program {
       const node = parser.parse();
 
       if (node) {
-        // this.run(node);
-        const executer = new Executer(node);
-        executer.run();
+        this.run(node);
+        // const executer = new Executer(node);
+        // executer.run();
       }
     }
   }
