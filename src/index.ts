@@ -1,16 +1,31 @@
-import { createInterface } from "readline";
-import { stdin, stdout } from "process";
-
+import express from "express";
+import bodyParser from "body-parser";
+import cors from "cors";
 import Program from "./core/program";
 
-const readline = createInterface({
-  input: stdin,
-  output: stdout,
-  terminal: false,
+type TEditor = {
+  code: string;
+};
+
+const app = express();
+const port = 3000;
+
+app.use(cors());
+app.use(bodyParser.json());
+
+app.post("/compile", (req, res) => {
+  const editor: TEditor = req.body;
+
+  const program = new Program(editor.code);
+  const output = program.execute();
+
+  res.send(output);
 });
 
-const program = new Program();
+app.get("/ping", (req, res) => {
+  res.send("pong");
+});
 
-readline.on("line", (input) => {
-  program.execute(input);
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`);
 });

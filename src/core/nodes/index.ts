@@ -4,7 +4,7 @@ import ZeroOperation from "./zero-operation";
 import Function from "./function";
 import Variable from "./variable";
 import Identifier from "./identifier";
-import Number from "./Number";
+import Number from "./number";
 import Expression from "./expression";
 
 export {

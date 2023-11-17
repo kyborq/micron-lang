@@ -9,12 +9,12 @@ class TokenType {
 }
 
 export const tokenTypeList = {
-  PRINT: new TokenType("PRINT", "\\bprint\\b"),
+  PRINT: new TokenType("PRINT", "\\bdisplay\\b"),
   FUNCTION: new TokenType("FUNCTION", "\\bfn\\b"),
   NUMBER: new TokenType("NUMBER", "[0-9]*[.,]?[0-9]+$"),
-  VAR: new TokenType("VAR", "\\bvar\\b"),
-  LET: new TokenType("LET", "\\blet\\b"),
-  ASSIGN: new TokenType("ASSIGN", `\=`),
+  VAR: new TokenType("VAR", "\\binit\\b"),
+  LET: new TokenType("LET", "\\bvar\\b"),
+  ASSIGN: new TokenType("ASSIGN", `:\=`),
   ADD: new TokenType("ADD", "\\+"),
   SUB: new TokenType("SUB", "\\-"),
   MUL: new TokenType("MUL", "\\*"),
